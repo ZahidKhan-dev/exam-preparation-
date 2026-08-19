@@ -1,0 +1,874 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Pakistan Smart Guess Paper Generator API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication and user management
+  - name: boards
+    description: Education boards
+  - name: universities
+    description: Universities
+  - name: classes
+    description: Classes and semesters
+  - name: subjects
+    description: Subjects
+  - name: papers
+    description: Past papers
+  - name: questions
+    description: Questions within papers
+  - name: topics
+    description: Topics and analysis
+  - name: analysis
+    description: Paper analysis and smart logic
+  - name: pdf
+    description: PDF generation
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+
+  /auth/upsert:
+    post:
+      operationId: upsertUser
+      tags: [auth]
+      summary: Create or update user after Firebase login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertUserRequest"
+      responses:
+        "200":
+          description: User upserted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /boards:
+    get:
+      operationId: listBoards
+      tags: [boards]
+      summary: List all education boards
+      responses:
+        "200":
+          description: List of boards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Board"
+    post:
+      operationId: createBoard
+      tags: [boards]
+      summary: Create a new board (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBoardRequest"
+      responses:
+        "201":
+          description: Created board
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Board"
+
+  /boards/{id}:
+    delete:
+      operationId: deleteBoard
+      tags: [boards]
+      summary: Delete a board (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /universities:
+    get:
+      operationId: listUniversities
+      tags: [universities]
+      summary: List all universities
+      responses:
+        "200":
+          description: List of universities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/University"
+    post:
+      operationId: createUniversity
+      tags: [universities]
+      summary: Create a university (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUniversityRequest"
+      responses:
+        "201":
+          description: Created university
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/University"
+
+  /universities/{id}:
+    delete:
+      operationId: deleteUniversity
+      tags: [universities]
+      summary: Delete a university (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /classes:
+    get:
+      operationId: listClasses
+      tags: [classes]
+      summary: List classes, optionally filtered by level
+      parameters:
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [Matric, Intermediate, University]
+      responses:
+        "200":
+          description: List of classes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Class"
+    post:
+      operationId: createClass
+      tags: [classes]
+      summary: Create a class (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClassRequest"
+      responses:
+        "201":
+          description: Created class
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Class"
+
+  /classes/{id}:
+    delete:
+      operationId: deleteClass
+      tags: [classes]
+      summary: Delete a class (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /subjects:
+    get:
+      operationId: listSubjects
+      tags: [subjects]
+      summary: List subjects, optionally filtered by classId
+      parameters:
+        - name: classId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of subjects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Subject"
+    post:
+      operationId: createSubject
+      tags: [subjects]
+      summary: Create a subject (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSubjectRequest"
+      responses:
+        "201":
+          description: Created subject
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subject"
+
+  /subjects/{id}:
+    delete:
+      operationId: deleteSubject
+      tags: [subjects]
+      summary: Delete a subject (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /papers:
+    get:
+      operationId: listPapers
+      tags: [papers]
+      summary: List past papers with optional filters
+      parameters:
+        - name: subjectId
+          in: query
+          schema:
+            type: integer
+        - name: boardId
+          in: query
+          schema:
+            type: integer
+        - name: universityId
+          in: query
+          schema:
+            type: integer
+        - name: year
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of papers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Paper"
+    post:
+      operationId: createPaper
+      tags: [papers]
+      summary: Create/upload a past paper (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePaperRequest"
+      responses:
+        "201":
+          description: Created paper
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Paper"
+
+  /papers/{id}:
+    get:
+      operationId: getPaper
+      tags: [papers]
+      summary: Get a specific paper with its questions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Paper with questions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaperWithQuestions"
+    delete:
+      operationId: deletePaper
+      tags: [papers]
+      summary: Delete a paper (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /questions:
+    post:
+      operationId: createQuestion
+      tags: [questions]
+      summary: Add a question to a paper (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateQuestionRequest"
+      responses:
+        "201":
+          description: Created question
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+
+  /questions/{id}:
+    delete:
+      operationId: deleteQuestion
+      tags: [questions]
+      summary: Delete a question (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /topics:
+    get:
+      operationId: listTopics
+      tags: [topics]
+      summary: List topics for a subject
+      parameters:
+        - name: subjectId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of topics with frequencies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Topic"
+
+  /analysis/{subjectId}:
+    get:
+      operationId: analyzeSubject
+      tags: [analysis]
+      summary: Analyze past papers for a subject — returns topic frequencies, predictions, and important questions
+      parameters:
+        - name: subjectId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: boardId
+          in: query
+          schema:
+            type: integer
+        - name: universityId
+          in: query
+          schema:
+            type: integer
+        - name: mode
+          in: query
+          schema:
+            type: string
+            enum: [normal, night_before, pass_guarantee, topper]
+            default: normal
+      responses:
+        "200":
+          description: Analysis results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisResult"
+
+  /generate-pdf:
+    post:
+      operationId: generatePdf
+      tags: [pdf]
+      summary: Generate a guess paper PDF
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GeneratePdfRequest"
+      responses:
+        "200":
+          description: PDF file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /study-plan:
+    post:
+      operationId: generateStudyPlan
+      tags: [analysis]
+      summary: Generate a smart study plan based on exam date and mode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudyPlanRequest"
+      responses:
+        "200":
+          description: Study plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyPlan"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        firebaseUid:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [student, admin]
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, firebaseUid, email, role]
+
+    UpsertUserRequest:
+      type: object
+      properties:
+        firebaseUid:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [student, admin]
+          default: student
+      required: [firebaseUid, email]
+
+    Board:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        province:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name]
+
+    CreateBoardRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        province:
+          type: string
+      required: [name]
+
+    University:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        city:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name]
+
+    CreateUniversityRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        city:
+          type: string
+      required: [name]
+
+    Class:
+      type: object
+      properties:
+        id:
+          type: integer
+        level:
+          type: string
+          enum: [Matric, Intermediate, University]
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, level, name]
+
+    CreateClassRequest:
+      type: object
+      properties:
+        level:
+          type: string
+          enum: [Matric, Intermediate, University]
+        name:
+          type: string
+      required: [level, name]
+
+    Subject:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        classId:
+          type: integer
+        className:
+          type: string
+        level:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, classId]
+
+    CreateSubjectRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        classId:
+          type: integer
+      required: [name, classId]
+
+    Paper:
+      type: object
+      properties:
+        id:
+          type: integer
+        subjectId:
+          type: integer
+        subjectName:
+          type: string
+        year:
+          type: integer
+        boardId:
+          type: integer
+        boardName:
+          type: string
+        universityId:
+          type: integer
+        universityName:
+          type: string
+        totalQuestions:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, subjectId, year]
+
+    CreatePaperRequest:
+      type: object
+      properties:
+        subjectId:
+          type: integer
+        year:
+          type: integer
+        boardId:
+          type: integer
+        universityId:
+          type: integer
+      required: [subjectId, year]
+
+    Question:
+      type: object
+      properties:
+        id:
+          type: integer
+        paperId:
+          type: integer
+        text:
+          type: string
+        type:
+          type: string
+          enum: [mcq, short, long]
+        topic:
+          type: string
+        marks:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, paperId, text, type]
+
+    CreateQuestionRequest:
+      type: object
+      properties:
+        paperId:
+          type: integer
+        text:
+          type: string
+        type:
+          type: string
+          enum: [mcq, short, long]
+        topic:
+          type: string
+        marks:
+          type: integer
+      required: [paperId, text, type]
+
+    PaperWithQuestions:
+      type: object
+      properties:
+        id:
+          type: integer
+        subjectId:
+          type: integer
+        subjectName:
+          type: string
+        year:
+          type: integer
+        boardId:
+          type: integer
+        boardName:
+          type: string
+        universityId:
+          type: integer
+        universityName:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Question"
+      required: [id, subjectId, year, questions]
+
+    Topic:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        subjectId:
+          type: integer
+        frequency:
+          type: integer
+        lastSeen:
+          type: integer
+        importance:
+          type: string
+          enum: [high, medium, low]
+      required: [id, name, subjectId, frequency]
+
+    TopicFrequency:
+      type: object
+      properties:
+        topic:
+          type: string
+        frequency:
+          type: integer
+        years:
+          type: array
+          items:
+            type: integer
+        importance:
+          type: string
+          enum: [high, medium, low]
+        prediction:
+          type: string
+      required: [topic, frequency, years, importance]
+
+    AnalysisResult:
+      type: object
+      properties:
+        subjectId:
+          type: integer
+        subjectName:
+          type: string
+        totalPapers:
+          type: integer
+        yearRange:
+          type: array
+          items:
+            type: integer
+        topicFrequencies:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopicFrequency"
+        importantQuestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Question"
+        predictedTopics:
+          type: array
+          items:
+            type: string
+        mode:
+          type: string
+      required: [subjectId, totalPapers, topicFrequencies, importantQuestions, predictedTopics]
+
+    GeneratePdfRequest:
+      type: object
+      properties:
+        subjectId:
+          type: integer
+        boardId:
+          type: integer
+        universityId:
+          type: integer
+        year:
+          type: integer
+        mode:
+          type: string
+          enum: [normal, night_before, pass_guarantee, topper]
+        title:
+          type: string
+        mcqCount:
+          type: integer
+          default: 10
+        shortCount:
+          type: integer
+          default: 5
+        longCount:
+          type: integer
+          default: 3
+      required: [subjectId]
+
+    StudyPlanRequest:
+      type: object
+      properties:
+        subjectId:
+          type: integer
+        examDate:
+          type: string
+          format: date
+        mode:
+          type: string
+          enum: [normal, night_before, pass_guarantee, topper]
+          default: normal
+        hoursPerDay:
+          type: integer
+          default: 3
+      required: [subjectId, examDate]
+
+    StudyPlanDay:
+      type: object
+      properties:
+        day:
+          type: integer
+        date:
+          type: string
+        topics:
+          type: array
+          items:
+            type: string
+        hours:
+          type: integer
+        focus:
+          type: string
+      required: [day, date, topics, hours]
+
+    StudyPlan:
+      type: object
+      properties:
+        subjectId:
+          type: integer
+        examDate:
+          type: string
+        totalDays:
+          type: integer
+        mode:
+          type: string
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/StudyPlanDay"
+        tips:
+          type: array
+          items:
+            type: string
+      required: [subjectId, examDate, totalDays, days]
